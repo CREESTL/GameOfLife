@@ -2,8 +2,8 @@ use tetra::graphics::{self, Color, Rectangle, DrawParams};
 use tetra::graphics::mesh::{GeometryBuilder, Mesh, ShapeStyle};
 use tetra::{Context, ContextBuilder, State, Result};
 use tetra::math::Vec2;
-use std::collections::HashMap;
-use indexmap::{IndexMap};
+// Similar to HashMap but with ordered indexing
+use indexmap::IndexMap;
 
 
 // Size of a field
@@ -62,11 +62,9 @@ impl Line{
 struct GameState {
     // Vector of lines to form a grid
     grid: Vec<Line>,
-    // A hashmap of coordinates of cells
+    // A map of coordinates of cells
     // {cell_ID -> coordinates}
-    // Note that coorinates are placed in random inexes of the hashmap - not one after another!
-    // TODO maybe use smth else instead of HashMap because of indexing?
-    cell_coords: HashMap<i32, Vec2<f32>>,
+    cell_coords: IndexMap<i32, Vec2<f32>>,
     // Vector of cells to be located on the field 
     cells: Vec<Cell>,
 
@@ -78,7 +76,7 @@ impl GameState{
         // A vector of cells 
         let mut cells = Vec::new();
         // A vector of coordinates of each cell (upper left corner)
-        let mut cell_coords = HashMap::new();
+        let mut cell_coords = IndexMap::new();
         // A vector of coordinates to build a grid 
         let mut grid = Vec::new();
         
