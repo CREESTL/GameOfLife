@@ -8,11 +8,11 @@ use std::collections::HashMap;
 const FIELD_WIDTH: f32 = 640.0;
 const FIELD_HEIGHT: f32 = 640.0;
 
-// 20 rectangles in a signle row
+// 20 cells in a signle row
 const ROW_PARTS: f32 = 20.0;
 
-// Length of a side of a rectangle (square)
-const RECT_SIZE: f32 = FIELD_WIDTH / ROW_PARTS;
+// Length of a side of a cell
+const CELL_SIZE: f32 = FIELD_WIDTH / ROW_PARTS;
 
 
 // A sctructure of a single cell on the field
@@ -27,7 +27,7 @@ struct Cell{
 impl Cell{
     // Constructor for a cell
     fn new(id: i32, pos: Vec2<f32>, ctx: &mut Context) -> Cell{
-        let mesh = Mesh::rectangle(ctx, ShapeStyle::Fill, Rectangle::new(0.0, 0.0, RECT_SIZE, RECT_SIZE)); 
+        let mesh = Mesh::rectangle(ctx, ShapeStyle::Fill, Rectangle::new(0.0, 0.0, CELL_SIZE, CELL_SIZE)); 
         match mesh{
             Ok(mesh) => return Cell{id, pos, mesh},
             // TODO a more fancy way to handle it?
@@ -37,15 +37,34 @@ impl Cell{
     }
 }
 
+// A single line
+struct Line{
+    width: f32,
+    points: [Vec2<f32>; 2],
+    mesh: Mesh
+}
+
+impl Line{
+    // Constructor for a line
+    fn new(width: f32, points: [Vec2<f32>; 2], ctx: &mut Context) -> Line{
+        let mesh = Mesh::polyline(ctx, width, &points);
+        match mesh{
+            Ok(mesh) => return Line{width, points, mesh},
+            Err(e) => panic!("{}", e)
+        }
+    }
+}
+
 
 // Struct contains a whole game state
 struct GameState {
+    // Vector of lines to form a grid
+    grid: Vec<Line>,
     // A hashmap of coordinates of cells
     // {cell_ID -> coordinates}
-    coords: HashMap<i32, Vec2<f32>>,
+    cell_coords: HashMap<i32, Vec2<f32>>,
     // Vector of cells to be located on the field 
-    cells: Vec<Cell>
-    
+    cells: Vec<Cell>,
 
 }
 
@@ -54,22 +73,49 @@ impl GameState{
     fn new(ctx: &mut Context) -> Result<GameState>{
         // A vector of cells 
         let mut cells = Vec::new();
-        let mut coords = HashMap::new();
-
-        // Initialize all coordinates
-        let examples = [[10.0,10.0], [150.0, 150.0]];
-        for (i, c) in examples.iter().enumerate() {
-            coords.insert(i as i32, Vec2::new(c[0] as f32, c[1] as f32)); 
-            
-        } 
+        // A vector of coordinates of each cell
+        let mut cell_coords = HashMap::new();
+        // A vector of coordinates to build a grid 
+        let mut grid = Vec::new();
+        
+        
+        // Initialize all cell coordinates
+        // let examples = [[10.0,10.0], [150.0, 150.0]];
+        // for (i, c) in examples.iter().enumerate() {
+        //     cell_coords.insert(i as i32, Vec2::new(c[0] as f32, c[1] as f32)); 
+        //     
+        // } 
 
         // Initialize all cells with those coordinates
-        for (key, (id, coords)) in coords.iter().enumerate() {
-            let cell = Cell::new(*id as i32, *coords, ctx);
-            cells.push(cell);
-        }   
+        // for (key, (id, coords)) in cell_coords.iter().enumerate() {
+        //     let cell = Cell::new(*id as i32, *coords, ctx);
+        //     cells.push(cell);
+        //     
+        // }   
+
+        // Initialize all grid lines with a constant set of coordinates
+        let mut x: f32 = 0.0;
+        let mut y: f32 = 0.0;
         
-        Ok(GameState{coords, cells})
+        // Vertical lines
+        while x <= FIELD_WIDTH {
+           let line = Line::new(2.0, [Vec2::new(x, y), Vec2::new(x, FIELD_HEIGHT)], ctx);
+           grid.push(line);
+           x += CELL_SIZE;
+        }
+
+        x = 0.0;
+        y = 0.0;
+        
+        // Horizontal lines
+        while y <= FIELD_HEIGHT {
+            let line = Line::new(2.0, [Vec2::new(x, y), Vec2::new(FIELD_WIDTH, y)], ctx);
+            grid.push(line);
+            y += CELL_SIZE;
+        }
+
+
+        Ok(GameState{grid, cell_coords, cells})
     }
 
 }
@@ -81,14 +127,20 @@ impl State for GameState {
         // Color of the field
         graphics::clear(ctx, Color::rgb(0.2, 0.2, 0.2));
 
-        // Draw rectangles
+        // Draw grid
+        for line in self.grid.iter(){
+            line.mesh.draw(ctx, DrawParams::new()
+                       .color(Color::rgb(1.0, 0.0, 0.0))
+                       );
+        }   
+        // Draw cells 
         for cell in self.cells.iter(){
             cell.mesh.draw(ctx, DrawParams::new()
                 .position(Vec2::new(cell.pos[0], cell.pos[1]))
                 .color(Color::rgb(0.0, 1.0, 0.0))
                 );
         }
-
+        
         Ok(())
     }
 
