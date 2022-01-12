@@ -3,6 +3,8 @@ use tetra::graphics::mesh::{GeometryBuilder, Mesh, ShapeStyle};
 use tetra::{Context, ContextBuilder, State, Result};
 use tetra::math::Vec2;
 use std::collections::HashMap;
+use indexmap::{IndexMap};
+
 
 // Size of a field
 const FIELD_WIDTH: f32 = 640.0;
@@ -62,6 +64,8 @@ struct GameState {
     grid: Vec<Line>,
     // A hashmap of coordinates of cells
     // {cell_ID -> coordinates}
+    // Note that coorinates are placed in random inexes of the hashmap - not one after another!
+    // TODO maybe use smth else instead of HashMap because of indexing?
     cell_coords: HashMap<i32, Vec2<f32>>,
     // Vector of cells to be located on the field 
     cells: Vec<Cell>,
@@ -73,30 +77,37 @@ impl GameState{
     fn new(ctx: &mut Context) -> Result<GameState>{
         // A vector of cells 
         let mut cells = Vec::new();
-        // A vector of coordinates of each cell
+        // A vector of coordinates of each cell (upper left corner)
         let mut cell_coords = HashMap::new();
         // A vector of coordinates to build a grid 
         let mut grid = Vec::new();
         
         
         // Initialize all cell coordinates
-        // let examples = [[10.0,10.0], [150.0, 150.0]];
-        // for (i, c) in examples.iter().enumerate() {
-        //     cell_coords.insert(i as i32, Vec2::new(c[0] as f32, c[1] as f32)); 
-        //     
-        // } 
-
-        // Initialize all cells with those coordinates
-        // for (key, (id, coords)) in cell_coords.iter().enumerate() {
-        //     let cell = Cell::new(*id as i32, *coords, ctx);
-        //     cells.push(cell);
-        //     
-        // }   
-
-        // Initialize all grid lines with a constant set of coordinates
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
+        let mut id: i32 = 0;
+        while x <= FIELD_WIDTH {
+            while y <= FIELD_HEIGHT {
+                cell_coords.insert(id, Vec2::new(x, y));
+                y += CELL_SIZE;
+                id += 1;
+            }
+            y = 0.0;
+            x += CELL_SIZE;
+        }
         
+        // Initialize all cells with those coordinates
+         for (num, (id, coords)) in cell_coords.iter().enumerate() {
+             if num % 2 == 0 {
+                 let cell = Cell::new(*id as i32, *coords, ctx);
+                 cells.push(cell);
+             }
+         }   
+
+        // Initialize all grid lines with a constant set of coordinates
+        x = 0.0;
+        y = 0.0;
         // Vertical lines
         while x <= FIELD_WIDTH {
            let line = Line::new(2.0, [Vec2::new(x, y), Vec2::new(x, FIELD_HEIGHT)], ctx);
