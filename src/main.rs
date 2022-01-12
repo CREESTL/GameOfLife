@@ -1,7 +1,9 @@
 use tetra::graphics::{self, Color, Rectangle, DrawParams};
 use tetra::graphics::mesh::{GeometryBuilder, Mesh, ShapeStyle};
 use tetra::{Context, ContextBuilder, State, Result};
+use tetra::window::set_mouse_visible;
 use tetra::math::Vec2;
+use tetra::input::{self, MouseButton};
 // Similar to HashMap but with ordered indexing
 use indexmap::IndexMap;
 
@@ -67,6 +69,8 @@ struct GameState {
     cell_coords: IndexMap<i32, Vec2<f32>>,
     // Vector of cells to be located on the field 
     cells: Vec<Cell>,
+    // Coordinates of a mouse
+    mouse_coords: Vec2<f32>,
 
 }
 
@@ -79,7 +83,8 @@ impl GameState{
         let mut cell_coords = IndexMap::new();
         // A vector of coordinates to build a grid 
         let mut grid = Vec::new();
-        
+        // Coordinates of the mouse 
+        let mouse_coords = Vec2::new(FIELD_WIDTH / 2.0, FIELD_HEIGHT / 2.0);
         
         // Initialize all cell coordinates
         let mut x: f32 = 0.0;
@@ -122,9 +127,14 @@ impl GameState{
             grid.push(line);
             y += CELL_SIZE;
         }
+        
+        // Make mouse cursor visible on the field
+        match set_mouse_visible(ctx, true){
+            Ok(_) => (),
+            Err(_) => panic!("Can not see the mouse!"),
+        }
 
-
-        Ok(GameState{grid, cell_coords, cells})
+        Ok(GameState{grid, cell_coords, cells, mouse_coords})
     }
 
 }
@@ -132,6 +142,7 @@ impl GameState{
 
 // Implement library trait for custom sctructure
 impl State for GameState {
+    // Function to draw all meshes
     fn draw(&mut self, ctx: &mut Context) -> Result{
         // Color of the field
         graphics::clear(ctx, Color::rgb(0.2, 0.2, 0.2));
@@ -152,6 +163,23 @@ impl State for GameState {
         
         Ok(())
     }
+    
+    // Function to update the state
+    fn update(&mut self, ctx: &mut Context) -> Result{
+        self.mouse_coords = input::get_mouse_position(ctx).round();
+
+        // The button is actually pressed for a few milliseconds and the program captures that
+        // So even if a use doesn't move the mouse, the program captures several values of mouse
+        // coordinate
+        if input::is_mouse_button_down(ctx, MouseButton::Left){
+            // TODO finished here
+        }
+
+        
+
+        Ok(())
+    }   
+
 
 
 }
