@@ -34,10 +34,10 @@ struct Cell{
 
 impl Cell{
     // Constructor for a cell
-    fn new(id: i32, pos: Vec2<f32>, ctx: &mut Context) -> Cell{
+    fn new(id: i32, pos: Vec2<f32>, alive: bool, ctx: &mut Context) -> Cell{
         let mesh = Mesh::rectangle(ctx, ShapeStyle::Fill, Rectangle::new(0.0, 0.0, CELL_SIZE, CELL_SIZE)); 
         match mesh{
-            Ok(mesh) => return Cell{id, pos, mesh, alive: false},
+            Ok(mesh) =>  Cell{id, pos, mesh, alive},
             // TODO a more fancy way to handle it?
             Err(e) => panic!("{}", e)
         }
@@ -57,7 +57,7 @@ impl Line{
     fn new(width: f32, points: [Vec2<f32>; 2], ctx: &mut Context) -> Line{
         let mesh = Mesh::polyline(ctx, width, &points);
         match mesh{
-            Ok(mesh) => return Line{width, points, mesh},
+            Ok(mesh) =>  Line{width, points, mesh},
             Err(e) => panic!("{}", e)
         }
     }
@@ -91,7 +91,6 @@ impl GameState{
         let mouse_coords = Vec2::new(FIELD_WIDTH / 2.0, FIELD_HEIGHT / 2.0);
         
         // Initialize all cell coordinates
-        // TODO after mouse is added - it will not be needed
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
         let mut id: i32 = 0;
@@ -106,11 +105,10 @@ impl GameState{
         }
         
         // Initialize all cells with those coordinates
-         for (num, (id, coords)) in cell_coords.iter().enumerate() {
-             if num % 2 == 0 {
-                 let cell = Cell::new(*id as i32, *coords, ctx);
-                 cells.push(cell);
-             }
+        for (_num, (id, coords)) in cell_coords.iter().enumerate() {
+            // All cells are initialized as dead ones
+            let cell = Cell::new(*id as i32, *coords, false, ctx);
+            cells.push(cell);
          }   
 
         // Initialize all grid lines with a constant set of coordinates
@@ -125,7 +123,6 @@ impl GameState{
 
         x = 0.0;
         y = 0.0;
-        
         // Horizontal lines
         while y <= FIELD_HEIGHT {
             let line = Line::new(2.0, [Vec2::new(x, y), Vec2::new(FIELD_WIDTH, y)], ctx);
@@ -157,7 +154,7 @@ impl GameState{
         }
 
         // Return -1 if none matches
-        0
+        -1
     }   
 
 }
@@ -178,11 +175,15 @@ impl State for GameState {
         }   
         // Draw cells 
         for cell in self.cells.iter(){
-            cell.mesh.draw(ctx, DrawParams::new()
+            // *only alive cells
+            if cell.alive == true {
+                cell.mesh.draw(ctx, DrawParams::new()
                 .position(Vec2::new(cell.pos[0], cell.pos[1]))
                 .color(Color::rgb(0.0, 1.0, 0.0))
                 );
-        }
+
+            }
+        }             
         
         Ok(())
     }
@@ -196,6 +197,7 @@ impl State for GameState {
         // coordinate
         if input::is_mouse_button_down(ctx, MouseButton::Left){
             let pointed_cell_id =  self.point_to_cell();
+            // TODO happens multiple times in a second - make a check for alive
             if let Some(mut cell) = self.cells.get_mut(pointed_cell_id as usize) {cell.alive = true}
        }
 
