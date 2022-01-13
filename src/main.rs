@@ -22,9 +22,13 @@ const CELL_SIZE: f32 = FIELD_WIDTH / ROW_PARTS;
 // A sctructure of a single cell on the field
 // Cell has and id(number), a position (coordinates) and a mesh (texture)
 struct Cell{
+    // ID of the cell
     id: i32,
+    // Position of cell's upper left corner
     pos: Vec2<f32>,
     mesh: Mesh,
+    // Status of the cell (alive/dead)
+    alive: bool
 }
 
 
@@ -33,7 +37,7 @@ impl Cell{
     fn new(id: i32, pos: Vec2<f32>, ctx: &mut Context) -> Cell{
         let mesh = Mesh::rectangle(ctx, ShapeStyle::Fill, Rectangle::new(0.0, 0.0, CELL_SIZE, CELL_SIZE)); 
         match mesh{
-            Ok(mesh) => return Cell{id, pos, mesh},
+            Ok(mesh) => return Cell{id, pos, mesh, alive: false},
             // TODO a more fancy way to handle it?
             Err(e) => panic!("{}", e)
         }
@@ -45,7 +49,7 @@ impl Cell{
 struct Line{
     width: f32,
     points: [Vec2<f32>; 2],
-    mesh: Mesh
+    mesh: Mesh,
 }
 
 impl Line{
@@ -67,7 +71,7 @@ struct GameState {
     // A map of coordinates of cells
     // {cell_ID -> coordinates}
     cell_coords: IndexMap<i32, Vec2<f32>>,
-    // Vector of cells to be located on the field 
+    // Vector of all cells on the field 
     cells: Vec<Cell>,
     // Coordinates of a mouse
     mouse_coords: Vec2<f32>,
@@ -87,6 +91,7 @@ impl GameState{
         let mouse_coords = Vec2::new(FIELD_WIDTH / 2.0, FIELD_HEIGHT / 2.0);
         
         // Initialize all cell coordinates
+        // TODO after mouse is added - it will not be needed
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
         let mut id: i32 = 0;
@@ -136,6 +141,24 @@ impl GameState{
 
         Ok(GameState{grid, cell_coords, cells, mouse_coords})
     }
+    
+    // Function to find a corresponding cell for the cursor
+    fn point_to_cell(&self) -> i32 {
+        let mouse_x = self.mouse_coords[0];
+        let mouse_y = self.mouse_coords[1];
+        for (_, cell) in self.cells.iter().enumerate(){
+            // First check the lower right corner of the cell
+            if (mouse_x <= cell.pos[0] + CELL_SIZE) && (mouse_y <= cell.pos[1] + CELL_SIZE){
+                // Then check the upper left corner of the cell
+                if (mouse_x >= cell.pos[0]) && (mouse_y >= cell.pos[1]){
+                    return cell.id
+                }
+            }   
+        }
+
+        // Return -1 if none matches
+        0
+    }   
 
 }
 
@@ -172,8 +195,9 @@ impl State for GameState {
         // So even if a use doesn't move the mouse, the program captures several values of mouse
         // coordinate
         if input::is_mouse_button_down(ctx, MouseButton::Left){
-            // TODO finished here
-        }
+            let pointed_cell_id =  self.point_to_cell();
+            if let Some(mut cell) = self.cells.get_mut(pointed_cell_id as usize) {cell.alive = true}
+       }
 
         
 
