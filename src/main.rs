@@ -176,7 +176,7 @@ impl State for GameState {
         // Draw cells 
         for cell in self.cells.iter(){
             // *only alive cells
-            if cell.alive == true {
+            if cell.alive {
                 cell.mesh.draw(ctx, DrawParams::new()
                 .position(Vec2::new(cell.pos[0], cell.pos[1]))
                 .color(Color::rgb(0.0, 1.0, 0.0))
