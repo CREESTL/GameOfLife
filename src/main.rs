@@ -19,6 +19,8 @@ const ROW_PARTS: f32 = 20.0;
 // Length of a side of a cell
 const CELL_SIZE: f32 = FIELD_WIDTH / ROW_PARTS;
 
+// Width of the line of the grid
+const LINE_WIDTH: f32 = 2.0;
 
 // A sctructure of a single cell on the field
 // Cell has and id(number), a position (coordinates) and a mesh (texture)
@@ -36,7 +38,9 @@ struct Cell{
 impl Cell{
     // Constructor for a cell
     fn new(id: i32, pos: Vec2<f32>, alive: bool, ctx: &mut Context) -> Cell{
-        let mesh = Mesh::rectangle(ctx, ShapeStyle::Fill, Rectangle::new(0.0, 0.0, CELL_SIZE, CELL_SIZE)); 
+        // Mesh should be a bit smaller for the grid lines to fit
+        let gap = LINE_WIDTH * 0.5;
+        let mesh = Mesh::rectangle(ctx, ShapeStyle::Fill, Rectangle::new(0.0 + gap , 0.0 + gap, CELL_SIZE - 2.0 * gap, CELL_SIZE - 2.0 * gap)); 
         match mesh{
             Ok(mesh) =>  Cell{id, pos, mesh, alive},
             // TODO a more fancy way to handle it?
@@ -116,16 +120,16 @@ impl GameState{
         y = 0.0;
         // Vertical lines
         while x <= FIELD_WIDTH {
-           let line = Line::new(2.0, [Vec2::new(x, y), Vec2::new(x, FIELD_HEIGHT)], ctx);
-           grid.push(line);
-           x += CELL_SIZE;
+            let line = Line::new(LINE_WIDTH, [Vec2::new(x, y), Vec2::new(x, FIELD_HEIGHT)], ctx);
+            grid.push(line);
+            x += CELL_SIZE;
         }
 
         x = 0.0;
         y = 0.0;
         // Horizontal lines
         while y <= FIELD_HEIGHT {
-            let line = Line::new(2.0, [Vec2::new(x, y), Vec2::new(FIELD_WIDTH, y)], ctx);
+            let line = Line::new(LINE_WIDTH, [Vec2::new(x, y), Vec2::new(FIELD_WIDTH, y)], ctx);
             grid.push(line);
             y += CELL_SIZE;
         }
@@ -198,7 +202,6 @@ impl State for GameState {
         // coordinate
         if input::is_mouse_button_pressed(ctx, MouseButton::Left){
             let pointed_cell_id =  self.point_to_cell();
-            // TODO happens multiple times in a second - make a check for alive
             if let Some(mut cell) = self.cells.get_mut(pointed_cell_id as usize) {
                 if cell.alive == false {
                     cell.alive = true;
