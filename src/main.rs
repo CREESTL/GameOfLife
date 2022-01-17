@@ -4,6 +4,7 @@ use tetra::{Context, ContextBuilder, State, Result};
 use tetra::window::set_mouse_visible;
 use tetra::math::Vec2;
 use tetra::input::{self, MouseButton};
+use tetra::time::Timestep;
 // Similar to HashMap but with ordered indexing
 use indexmap::IndexMap;
 
@@ -101,8 +102,7 @@ impl GameState{
                 id += 1;
             }
             y = 0.0;
-            x += CELL_SIZE;
-        }
+            x += CELL_SIZE; }
         
         // Initialize all cells with those coordinates
         for (_num, (id, coords)) in cell_coords.iter().enumerate() {
@@ -135,6 +135,7 @@ impl GameState{
             Ok(_) => (),
             Err(_) => panic!("Can not see the mouse!"),
         }
+
 
         Ok(GameState{grid, cell_coords, cells, mouse_coords})
     }
@@ -195,10 +196,17 @@ impl State for GameState {
         // The button is actually pressed for a few milliseconds and the program captures that
         // So even if a use doesn't move the mouse, the program captures several values of mouse
         // coordinate
-        if input::is_mouse_button_down(ctx, MouseButton::Left){
+        if input::is_mouse_button_pressed(ctx, MouseButton::Left){
             let pointed_cell_id =  self.point_to_cell();
             // TODO happens multiple times in a second - make a check for alive
-            if let Some(mut cell) = self.cells.get_mut(pointed_cell_id as usize) {cell.alive = true}
+            if let Some(mut cell) = self.cells.get_mut(pointed_cell_id as usize) {
+                if cell.alive == false {
+                    cell.alive = true;
+                } else {
+                    cell.alive = false;
+                }
+
+            }
        }
 
         
@@ -213,6 +221,7 @@ impl State for GameState {
 fn main() -> Result{
     // Create a Context with titled window
     ContextBuilder::new("Life", FIELD_WIDTH as i32, FIELD_HEIGHT as i32)
+    .timestep(Timestep::Fixed(60.0)) // How many times a second the State::update() runs
     .quit_on_escape(true)
     .build()?
     // Or just GameState::mew (sugar)
