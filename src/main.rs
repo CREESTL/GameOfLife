@@ -1,9 +1,10 @@
 use tetra::graphics::{self, Color, Rectangle, DrawParams};
 use tetra::graphics::mesh::{GeometryBuilder, Mesh, ShapeStyle};
+use tetra::graphics::text::{Font, Text};
 use tetra::{Context, ContextBuilder, State, Result};
 use tetra::window::set_mouse_visible;
 use tetra::math::Vec2;
-use tetra::input::{self, MouseButton};
+use tetra::input::{self, MouseButton, Key};
 use tetra::time::Timestep;
 // Similar to HashMap but with ordered indexing
 use indexmap::IndexMap;
@@ -68,9 +69,37 @@ impl Line{
     }
 }
 
+// Status text of the game
+struct StatusText{
+    // Position of the text on the window
+    pos: Vec2<f32>,
+    text: Text,
+}
+
+
+impl StatusText{
+    // Constructor of a status text
+    fn new(ctx: &mut Context, pos: Vec2<f32>) -> StatusText{
+        let font = Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 16.0);
+        let f = match font {
+            Ok(font) => font,
+            Err(font) => panic!("Can't read a font file!"),
+        };
+        let text = Text::new(
+            "Paused", 
+            f,
+        );
+
+        StatusText{pos, text}
+        
+    }
+
+}
 
 // Struct contains a whole game state
 struct GameState {
+    // Is the game running
+    running: bool,
     // Vector of lines to form a grid
     grid: Vec<Line>,
     // A map of coordinates of cells
@@ -80,6 +109,8 @@ struct GameState {
     cells: Vec<Cell>,
     // Coordinates of a mouse
     mouse_coords: Vec2<f32>,
+    // Game status text
+    status_text: StatusText, 
 
 }
 
@@ -94,7 +125,10 @@ impl GameState{
         let mut grid = Vec::new();
         // Coordinates of the mouse 
         let mouse_coords = Vec2::new(FIELD_WIDTH / 2.0, FIELD_HEIGHT / 2.0);
-        
+        // By default the game is not running
+        let running = false;
+        // By default text indicates that game is stopped
+        let status_text = StatusText::new(ctx, Vec2::new(FIELD_WIDTH + 50.0, 50.0));
         // Initialize all cell coordinates
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
@@ -141,7 +175,7 @@ impl GameState{
         }
 
 
-        Ok(GameState{grid, cell_coords, cells, mouse_coords})
+        Ok(GameState{running, grid, cell_coords, cells, mouse_coords, status_text})
     }
     
     // Function to find a corresponding cell for the cursor
@@ -178,6 +212,13 @@ impl State for GameState {
                        .color(Color::rgb(1.0, 0.0, 0.0))
                        );
         }   
+
+        // Draw text
+        self.status_text.text.draw(ctx, DrawParams::new()
+            .position(self.status_text.pos)
+            );
+        
+
         // Draw cells 
         for cell in self.cells.iter(){
             // *only alive cells
@@ -197,9 +238,7 @@ impl State for GameState {
     fn update(&mut self, ctx: &mut Context) -> Result{
         self.mouse_coords = input::get_mouse_position(ctx).round();
 
-        // The button is actually pressed for a few milliseconds and the program captures that
-        // So even if a use doesn't move the mouse, the program captures several values of mouse
-        // coordinate
+        // Revive or kill a cell with a LMB
         if input::is_mouse_button_pressed(ctx, MouseButton::Left){
             let pointed_cell_id =  self.point_to_cell();
             if let Some(mut cell) = self.cells.get_mut(pointed_cell_id as usize) {
@@ -210,9 +249,12 @@ impl State for GameState {
                 }
 
             }
-       }
+        }
 
-        
+        // Start or pause the game with SPACE
+        if input::is_key_pressed(ctx, Key::Space){
+            self.running = !self.running;
+        }
 
         Ok(())
     }   
@@ -223,7 +265,7 @@ impl State for GameState {
 
 fn main() -> Result{
     // Create a Context with titled window
-    ContextBuilder::new("Life", FIELD_WIDTH as i32, FIELD_HEIGHT as i32)
+    ContextBuilder::new("Life", (FIELD_WIDTH + 200.0) as i32, (FIELD_HEIGHT + 0.0)  as i32)
     .timestep(Timestep::Fixed(60.0)) // How many times a second the State::update() runs
     .quit_on_escape(true)
     .build()?
