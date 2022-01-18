@@ -133,8 +133,8 @@ impl GameState{
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
         let mut id: i32 = 0;
-        while x <= FIELD_WIDTH {
-            while y <= FIELD_HEIGHT {
+        while x <= FIELD_WIDTH - 1.0 {
+            while y <= FIELD_HEIGHT - 1.0 {
                 cell_coords.insert(id, Vec2::new(x, y));
                 y += CELL_SIZE;
                 id += 1;
@@ -153,7 +153,7 @@ impl GameState{
         x = 0.0;
         y = 0.0;
         // Vertical lines
-        while x <= FIELD_WIDTH {
+        while x <= FIELD_WIDTH + 1.0 {
             let line = Line::new(LINE_WIDTH, [Vec2::new(x, y), Vec2::new(x, FIELD_HEIGHT)], ctx);
             grid.push(line);
             x += CELL_SIZE;
