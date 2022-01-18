@@ -23,6 +23,13 @@ const CELL_SIZE: f32 = FIELD_WIDTH / ROW_PARTS;
 // Width of the line of the grid
 const LINE_WIDTH: f32 = 2.0;
 
+// Width of menu part
+const MENU_WIDTH: f32 = 100.0;
+
+// Indent of a status text from the field
+// Indent to the right and down
+const STATUS_TEXT_INDENTS: (f32, f32) = (MENU_WIDTH / 4.0, 20.0 as f32);
+
 // A sctructure of a single cell on the field
 // Cell has and id(number), a position (coordinates) and a mesh (texture)
 struct Cell{
@@ -80,7 +87,7 @@ struct StatusText{
 impl StatusText{
     // Constructor of a status text
     fn new(ctx: &mut Context, pos: Vec2<f32>) -> StatusText{
-        let font = Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 16.0);
+        let font = Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 20.0);
         let f = match font {
             Ok(font) => font,
             Err(font) => panic!("Can't read a font file!"),
@@ -128,11 +135,12 @@ impl GameState{
         // By default the game is not running
         let running = false;
         // By default text indicates that game is stopped
-        let status_text = StatusText::new(ctx, Vec2::new(FIELD_WIDTH + 50.0, 50.0));
+        let status_text = StatusText::new(ctx, Vec2::new(FIELD_WIDTH + STATUS_TEXT_INDENTS.0, STATUS_TEXT_INDENTS.1));
         // Initialize all cell coordinates
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
         let mut id: i32 = 0;
+        // Cell shouldn't be drawn after the last vertical line
         while x <= FIELD_WIDTH - 1.0 {
             while y <= FIELD_HEIGHT - 1.0 {
                 cell_coords.insert(id, Vec2::new(x, y));
@@ -254,6 +262,10 @@ impl State for GameState {
         // Start or pause the game with SPACE
         if input::is_key_pressed(ctx, Key::Space){
             self.running = !self.running;
+            match self.running {
+                true => self.status_text.text.set_content("Running"),
+                false => self.status_text.text.set_content("Paused"),
+            };
         }
 
         Ok(())
