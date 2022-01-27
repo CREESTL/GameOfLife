@@ -1,7 +1,5 @@
-use std::iter::FlatMap;
-
 use tetra::graphics::{self, Color, Rectangle, DrawParams};
-use tetra::graphics::mesh::{GeometryBuilder, Mesh, ShapeStyle};
+use tetra::graphics::mesh::{Mesh, ShapeStyle};
 use tetra::graphics::text::{Font, Text};
 use tetra::{Context, ContextBuilder, State, Result};
 use tetra::window::set_mouse_visible;
@@ -33,7 +31,6 @@ const MENU_WIDTH: f32 = 100.0;
 const STATUS_TEXT_INDENTS: (f32, f32) = (MENU_WIDTH / 4.0, 20.0 as f32);
 
 // A sctructure of a single cell on the field
-// Cell has and id(number), a position (coordinates) and a mesh (texture)
 struct Cell{
     // ID of the cell
     id: i32,
@@ -53,7 +50,7 @@ impl Cell{
         match mesh{
             Ok(mesh) =>  Cell{id, pos, mesh, alive},
             // TODO a more fancy way to handle it?
-            Err(e) => panic!("{}", e)
+            Err(_) => panic!("Couldn`t create a cell!")
         }
         
     }
@@ -78,7 +75,9 @@ impl Line{
     }
 }
 
+
 // Status text of the game
+// It's eaither "Running" or "Paused"
 struct StatusText{
     // Position of the text on the window
     pos: Vec2<f32>,
@@ -92,7 +91,7 @@ impl StatusText{
         let font = Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 20.0);
         let f = match font {
             Ok(font) => font,
-            Err(font) => panic!("Can't read a font file!"),
+            Err(_) => panic!("Can't read a font file!"),
         };
         let text = Text::new(
             "Paused", 
@@ -100,9 +99,7 @@ impl StatusText{
             );
 
         StatusText{pos, text}
-        
     }
-
 }
 
 // Struct contains a whole game state
@@ -120,25 +117,20 @@ struct GameState {
     mouse_coords: Vec2<f32>,
     // Game status text
     status_text: StatusText, 
-
 }
-
 
 impl GameState{
     // A constructor for a new game state
     fn new(ctx: &mut Context) -> Result<GameState>{
-        // A vector of cells 
         let mut cells = Vec::new();
-        // A vector of coordinates of each cell (upper left corner)
         let mut cell_coords = IndexMap::new();
-        // A vector of coordinates to build a grid 
         let mut grid = Vec::new();
-        // Coordinates of the mouse 
         let mouse_coords = Vec2::new(FIELD_WIDTH / 2.0, FIELD_HEIGHT / 2.0);
         // By default the game is not running
         let running = false;
         // By default text indicates that game is stopped
         let status_text = StatusText::new(ctx, Vec2::new(FIELD_WIDTH + STATUS_TEXT_INDENTS.0, STATUS_TEXT_INDENTS.1));
+
         // Initialize all cell coordinates
         let mut x: f32 = 0.0;
         let mut y: f32 = 0.0;
@@ -184,7 +176,6 @@ impl GameState{
             Ok(_) => (),
             Err(_) => panic!("Can not see the mouse!"),
         }
-
 
         Ok(GameState{running, grid, cell_coords, cells, mouse_coords, status_text})
     }
@@ -245,11 +236,9 @@ impl State for GameState {
         Ok(())
     }
     
-
+    // TODO find a way to make different timesteps for mouse input and update rate
     // Function to update the state
     fn update(&mut self, ctx: &mut Context) -> Result{
-
-        //println!();
 
         self.mouse_coords = input::get_mouse_position(ctx).round();
 
@@ -262,7 +251,6 @@ impl State for GameState {
                 } else {
                     cell.alive = false;
                 }
-
             }
         }
 
@@ -279,23 +267,25 @@ impl State for GameState {
         // Main part - updating cells coordinates and alive statuses
         if self.running {
 
-
+            // Vector of indexes of cells that should be alive in the next iteration
+            // Contains `usize` elements!
             let mut next_cells = Vec::new();
 
             for id in 0..self.cells.len() {
 
                 // Convert id to i32 to do calculations
-                let id = id as i32;
+                let id32 = id as i32;
+                
                 // Indexes of neighbours of the cell
                 let n_ids = [
-                    id - ROW_PARTS,
-                    id + ROW_PARTS,
-                    id - 1,
-                    id + 1,
-                    id - (ROW_PARTS - 1),
-                    id + (ROW_PARTS - 1),
-                    id - (ROW_PARTS + 1),
-                    id + (ROW_PARTS + 1),
+                    id32 - ROW_PARTS,
+                    id32 + ROW_PARTS,
+                    id32 - 1,
+                    id32 + 1,
+                    id32 - (ROW_PARTS - 1),
+                    id32 + (ROW_PARTS - 1),
+                    id32 - (ROW_PARTS + 1),
+                    id32 + (ROW_PARTS + 1),
                 ];
 
                 // A number of alive neighbours of the cell
@@ -305,8 +295,7 @@ impl State for GameState {
                     // If the neighbour is alive and the distance to the neighbour is less than length of cell side multiplied by 2 - increment the 
                     // number of alive neighbours
                     if let Some(n_cell) = self.cells.get(n_id as usize) { 
-                        if n_cell.alive && (self.cells[id as usize].pos[1] as i32 - n_cell.pos[1] as i32).abs() <= (CELL_SIZE * 2.0) as i32{
-                            //println!(" Cell {id} has an alive neighbour - cell {n_id}");
+                        if n_cell.alive && (self.cells[id].pos[1] as i32 - n_cell.pos[1] as i32).abs() <= (CELL_SIZE * 2.0) as i32{
                             alive_neighbours += 1;
                         }
                     }
@@ -319,7 +308,7 @@ impl State for GameState {
                     // Cell dies in all other cases
                     // Add indexes of cells that should be alive in the next iteration
                     2 => {
-                        if self.cells[id as usize].alive == true {
+                        if self.cells[id].alive == true {
                             next_cells.push(id);
                         }
                     },
@@ -329,9 +318,6 @@ impl State for GameState {
                     _ => ()
                 };
             }
-
-
-            println!("Length of next_cells is {} and they are {:?}", next_cells.len(), next_cells);
 
 
             // If none of cells should be alive on the next iteration - kill all of them
@@ -344,12 +330,11 @@ impl State for GameState {
                 // Iterate through the cells and check if cell's ID is in the next cells
                 for i in 0..self.cells.len(){
                     for j in 0..next_cells.len(){
-                        //println!("Comparing cells {} and {j}", self.cells[i].id);
                         // If it is - this cell should be alive
-                        if self.cells[i].id == next_cells[j]{
-                            //println!("Cell {} is alive in next iter", self.cells[i].id );
+                        if self.cells[i].id == next_cells[j] as i32{
                             self.cells[i].alive = true;
                             break;
+                        // If it is not - this cell should be dead
                         } else {
                             self.cells[i].alive = false;
                         }
@@ -357,15 +342,10 @@ impl State for GameState {
                     }
                 }
             }
-
-
         }
 
         Ok(())
     }   
-
-
-
 }
 
 fn main() -> Result {
