@@ -28,7 +28,7 @@ const MENU_WIDTH: f32 = 100.0;
 
 // Indent of a status text from the field
 // Indent to the right and down
-const STATUS_TEXT_INDENTS: (f32, f32) = (MENU_WIDTH / 4.0, 20.0 as f32);
+const STATUS_TEXT_INDENTS: (f32, f32) = (MENU_WIDTH / 4.0, 80.0 as f32);
 
 // A sctructure of a single cell on the field
 struct Cell{
@@ -88,19 +88,20 @@ struct StatusText{
 impl StatusText{
     // Constructor of a status text
     fn new(ctx: &mut Context, pos: Vec2<f32>) -> StatusText{
-        let font = Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 20.0);
+        let font = Font::vector(ctx, "./resources/DejaVuSansMono.ttf", 21.0);
         let f = match font {
             Ok(font) => font,
             Err(_) => panic!("Can't read a font file!"),
         };
         let text = Text::new(
-            "Paused", 
+            "New Attempt", 
             f,
             );
 
         StatusText{pos, text}
     }
 }
+
 
 // Struct contains a whole game state
 struct GameState {
@@ -180,6 +181,17 @@ impl GameState{
         Ok(GameState{running, grid, cell_coords, cells, mouse_coords, status_text})
     }
     
+
+    // Function resets the game state
+    fn reset(&mut self){
+        self.running = false;
+        self.status_text.text.set_content("New Attempt");
+        for cell in self.cells.iter_mut(){
+            cell.alive = false;
+        }
+    }
+
+
     // Function to find a corresponding cell for the cursor
     fn point_to_cell(&self) -> i32 {
         let mouse_x = self.mouse_coords[0];
@@ -218,6 +230,7 @@ impl State for GameState {
         // Draw text
         self.status_text.text.draw(ctx, DrawParams::new()
             .position(self.status_text.pos)
+            .color(Color::rgb(0.643, 0.258, 0.862))
             );
         
 
@@ -235,6 +248,7 @@ impl State for GameState {
         
         Ok(())
     }
+
     
     // TODO find a way to make different timesteps for mouse input and update rate
     // Function to update the state
@@ -263,7 +277,14 @@ impl State for GameState {
             };
         }
 
-        // TODO Separate creating a list of neighbours and the checking alive in two functions
+
+    
+
+        // Reset the game with R
+        if input::is_key_pressed(ctx, Key::R){
+            self.reset();
+        }
+
         // Main part - updating cells coordinates and alive statuses
         if self.running {
 
@@ -350,7 +371,7 @@ impl State for GameState {
 
 fn main() -> Result {
     // Create a Context with titled window
-    ContextBuilder::new("Life", (FIELD_WIDTH + 200.0) as i32, (FIELD_HEIGHT + 0.0)  as i32)
+    ContextBuilder::new("Game of Life", (FIELD_WIDTH + 200.0) as i32, (FIELD_HEIGHT + 0.0)  as i32)
     .timestep(Timestep::Fixed(5.0)) // How many times a second the State::update() runs
     .quit_on_escape(true)
     .build()?
