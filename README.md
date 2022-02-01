@@ -3,6 +3,8 @@
 ### Installation
 - Linux
   - Clone this repository
+  - `sudo apt install libsdl2-dev`
+  - `sudo apt install libasound2-dev`
   - Run `target/release/game_of_life`
 ___
 ### Rules
