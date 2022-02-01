@@ -21,3 +21,6 @@ ___
 - Press _spacebar_ to __pause__ the game
 - Press _R_ to __reset__ the game
 - Press _Q_ or _Esc_ to __quit__ the game
+
+___
+For more detailed info about the game look [here](https://en.wikipedia.org/wiki/The_Game_of_Life)
