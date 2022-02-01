@@ -2,7 +2,7 @@ use tetra::graphics::{self, Color, Rectangle, DrawParams};
 use tetra::graphics::mesh::{Mesh, ShapeStyle};
 use tetra::graphics::text::{Font, Text};
 use tetra::{Context, ContextBuilder, State, Result};
-use tetra::window::set_mouse_visible;
+use tetra::window::{set_mouse_visible, quit};
 use tetra::math::Vec2;
 use tetra::input::{self, MouseButton, Key};
 use tetra::time::Timestep;
@@ -276,13 +276,17 @@ impl State for GameState {
                 false => self.status_text.text.set_content("Paused"),
             };
         }
-
-
     
 
         // Reset the game with R
         if input::is_key_pressed(ctx, Key::R){
             self.reset();
+        }
+
+
+        // Quit the game with Q
+        if input::is_key_pressed(ctx, Key::Q){
+            quit(ctx);
         }
 
         // Main part - updating cells coordinates and alive statuses
